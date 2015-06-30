@@ -1,0 +1,26 @@
+## Interface: 60200
+## Title: Premade Group Finder
+## Version: v2.2
+## Notes: Finds premade groups of your choice
+## Author: Ant-Kazzak
+## SavedVariables: friends
+## SavedVariables: keywords
+## SavedVariables: INTERVAL
+## SavedVariables: ENABLED
+## SavedVariables: SOUND_NOTIFICATION
+## SavedVariables: WHISPER_NOTIFICATION
+## SavedVariables: GUILD_NOTIFICATION
+## SavedVariables: AUTO_SIGN
+## SavedVariables: SEARCH_LOGIN
+## SavedVariables: LATEST_CATEGORY
+## SavedVariablesPerCharacter: playerName
+
+Localization.enUS.lua
+Localization.deDE.lua
+Localization.esES.lua
+Localization.frFR.lua
+Localization.ptBR.lua
+
+PGFinderUtils.lua
+PGFinder.lua
+PGFinderOptions.lua
