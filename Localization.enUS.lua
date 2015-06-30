@@ -1,5 +1,5 @@
-PGFinderLocals = {}
-local L = PGFinderLocals
+HellbaneHelperLocals = {}
+local L = HellbaneHelperLocals
 local addon = ...
 
 SLASH_PREMADEGROUPFINDER1 = "/pgf"

@@ -1,6 +1,6 @@
 if GetLocale() ~= "ptBR" then return end
-PGFinderLocals = {}
-local L = PGFinderLocals
+HellbaneHelperLocals = {}
+local L = HellbaneHelperLocals
 local addon = ...
 
 SLASH_PREMADEGROUPFINDER1 = "/pgf"

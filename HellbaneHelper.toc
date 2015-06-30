@@ -1,10 +1,9 @@
 ## Interface: 60200
-## Title: Premade Group Finder
-## Version: v2.2
-## Notes: Finds premade groups of your choice
-## Author: Ant-Kazzak
+## Title: Hellbane Helper
+## Version: v0.5
+## Notes: Finds Premade groups of Hellbane rare mobs in Tanaan Jungle (based on Premade Group Finder by Ant-Kazzak)
+## Author: Ant-Kazzak, Hiale
 ## SavedVariables: friends
-## SavedVariables: keywords
 ## SavedVariables: INTERVAL
 ## SavedVariables: ENABLED
 ## SavedVariables: SOUND_NOTIFICATION
@@ -21,6 +20,5 @@ Localization.esES.lua
 Localization.frFR.lua
 Localization.ptBR.lua
 
-PGFinderUtils.lua
-PGFinder.lua
-PGFinderOptions.lua
+HellbaneHelperUtils.lua
+HellbaneHelper.lua

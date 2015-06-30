@@ -1,5 +1,5 @@
 local addon = ...
-local L = PGFinderLocals
+local L = HellbaneHelperLocals
 
 --[[
 	Finds an index in a table that is not used
