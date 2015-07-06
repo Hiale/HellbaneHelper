@@ -67,10 +67,10 @@ local function UpdateKeywords(keywordsArray)
 		keywords[k] = nil
 	end	
 	
-	DEFAULT_CHAT_FRAME:AddMessage("Searching following keywords:")
+	--DEFAULT_CHAT_FRAME:AddMessage("Searching following keywords:")
 	for _, keyword in pairs(keywordsArray) do
 		table.insert(keywords, keyword)			
-		DEFAULT_CHAT_FRAME:AddMessage(keyword)			
+		--DEFAULT_CHAT_FRAME:AddMessage(keyword)			
 	end
 end
 
@@ -96,6 +96,11 @@ local function GetRemainingUnits(targetUnits, updateKeywords)
 					table.insert(aggregatedKeywords, keyword)				
 				end
 			end
+		end
+	end
+	
+	for k, v in pairs(units) do
+		if not IsQuestFlaggedCompleted(k) then
 			remainingUnitsCount = remainingUnitsCount + 1
 		end
 	end
@@ -105,7 +110,9 @@ local function GetRemainingUnits(targetUnits, updateKeywords)
 	end
 	
 	if remainingUnitsCount ~= oldRemainingUnitsCount then
-		PrintStatus()
+		if correctZone then
+			PrintStatus()
+		end
 		oldRemainingUnitsCount = remainingUnitsCount
 	end
 	return remainingUnitsCount
@@ -157,7 +164,8 @@ f:SetScript("OnEvent", function(self, event, ...)
 		if LATEST_CATEGORY == nil then LATEST_CATEGORY = "" end
 		-- Hiale
 		INTERVAL = 2
-		GUILD_NOTIFICATION = false				
+		GUILD_NOTIFICATION = false
+		SEARCH_LOGIN = false
 		-- Hiale
 	elseif event == "PLAYER_LOGIN" then
 		DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00" .. L.WARNING_LOGIN_TEXT)
@@ -169,6 +177,7 @@ f:SetScript("OnEvent", function(self, event, ...)
 			C_LFGList.Search(LATEST_CATEGORY, "")
 		end
 		-- Hiale
+		AUTO_SIGN = false
 		GetRemainingUnits(units, true)
 		-- Hiale
 	elseif event == "LFG_LIST_SEARCH_RESULT_UPDATED" and ENABLED then
