@@ -59,33 +59,6 @@ function getSize(arr)
 	return count
 end
 --[[
-	Sends notifications to chosen online friends that a group containing a given keyword has been created through whispers and battle net
-	param(name) string / Name of the friend to notified
-]]
-function pmFriend(name, groupName)
-	if name:find("#") and BNConnected() then
-		local nameStart, nameEnd = name:find("#")
-		local BNName = name:sub(0, nameEnd-1)
-		local pID = GetAutoCompletePresenceID(BNName)
-		local presenceID, presenceName, battleTag, isBattleTagPresence, toonName, toonID, client, isOnline, lastOnline, isAFK, isDND, messageText, noteText, isRIDFriend, broadcastTime, canSoR = BNGetFriendInfoByID(pID)
-		if isOnline then
-			BNSendWhisper(presenceID, L.NOTIFICATION_FRIENDS_1 .. playerName .. L.NOTIFICATION_FRIENDS_2 .. groupName)
-		end
-	elseif name:find(" ") and BNConnected() then
-		local pID = GetAutoCompletePresenceID(name)
-		if pID ~= nil then
-			local presenceID, presenceName, battleTag, isBattleTagPresence, toonName, toonID, client, isOnline, lastOnline, isAFK, isDND, messageText, noteText, isRIDFriend, broadcastTime, canSoR = BNGetFriendInfoByID(pID)
-			if isOnline then
-				BNSendWhisper(presenceID, L.NOTIFICATION_FRIENDS_1 .. playerName .. L.NOTIFICATION_FRIENDS_2 .. groupName)
-			end
-		end
-	else
-		if UnitIsConnected(name) ~= nil then
-			SendChatMessage(L.NOTIFICATION_FRIENDS_1 .. playerName .. L.NOTIFICATION_FRIENDS_2 .. groupName, "WHISPER", nil, name)
-		end
-	end
-end
---[[
 	Checks if the player is eligible to sign up for a premade group.
 	returns false if person is in a group and is not a leader and true if person is not in a group or is in a group but is leader
 ]]
@@ -135,7 +108,20 @@ function isMatch(name, keywords)
 	end
 	return matched
 end
-function getGroupRating(players)
+
+function mergeTables(t1, t2)
+    for k, v in pairs(t2) do
+        if (type(v) == "table") and (type(t1[k] or false) == "table") then
+            mergeTables(t1[k], t2[k])
+        else
+            if not contains(t1, v) then
+              table.insert(t1, v)
+            end
+        end
+    end
+    return t1
 end
-function getGroupAchievements(players, achievement)
+
+function firstToUpper(str)
+    return (str:gsub("^%l", string.upper))
 end

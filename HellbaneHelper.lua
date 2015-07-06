@@ -4,8 +4,6 @@
 	Version: 2.0
 ]]
 -- SAVEDVARIABLES:
--- keywords Storing all keywords
--- friends Storing all friends
 -- INTERVAL Interval between the searches
 -- ENABLED Checks if addon is enabled
 -- SAVEDVARIABLESPERCHARACTER
@@ -15,7 +13,7 @@ local L = HellbaneHelperLocals -- Strings
 local f = CreateFrame("Frame") -- Addon Frame
 local ticks = 0 -- Time elapsed since last search
 local C_LFGList = C_LFGList -- The C_LFGList
-local foundGroups = {} -- Groups that the player and its friends has been notified about
+local foundGroups = {} -- Groups that the player has been notified about
 local categories = {
 	"Questing", 
 	"Dungeons", 
@@ -29,48 +27,49 @@ local categories = {
 	"Ashran"
 }
 
--- Hiale
 local units = {
-	[39288] = { keywords = {"terrorfist"}, subzones = {"Rangari Refuge"} },
-	[39287] = { keywords = {"deathtalon"}, subzones = {"Aktar's Post", "Ruins of Kra'nak"} },
-	[39290] = { keywords = {"vengeance", "veng"}, subzones = {"Temple of Sha'naar"} },
-	[39289] = { keywords = {"doomroller"}, subzones = {"Warcamp Gromdar"} }
+	[39287] = { keywords = {"deathtalon"}, subzones = {} },
+	[39288] = { keywords = {"terrorfist", "terror"}, subzones = {} },
+	[39289] = { keywords = {"doomroller", "doom"}, subzones = {} },
+	[39290] = { keywords = {"vengeance", "veng"}, subzones = {} }
 }
 
+local debug = true
 local keywords = {}
+local AUTO_SIGN = false
 local correctZone = false
 local oldRemainingUnitsCount = 0
 local oldTargetUnitsCount = 0
--- Hiale
 
 --[[
-	Reads all commands with the prefix SLASH-PREMADEGROUPFINDER and responds accordingly
+	Reads all commands with the prefix SLASH-HELLBANEHELPER and responds accordingly
 	@param(msg) string / The message sent by the user
 	@param(editbox)
 ]]
 local function handler(msg, editbox)
 	InterfaceOptionsFrame_OpenToCategory(options)
 end
---SlashCmdList["PREMADEGROUPFINDER"] = handler
+SlashCmdList["HELLBANEHELPER"] = handler
 f:RegisterEvent("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED")
--- Hiale
 f:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 f:RegisterEvent("ZONE_CHANGED")
--- Hiale
 
--- Hiale
 local function UpdateKeywords(keywordsArray)
 	for k, v in pairs(keywords) do
 		keywords[k] = nil
 	end	
 	
-	--DEFAULT_CHAT_FRAME:AddMessage("Searching following keywords:")
+	if debug then
+		DEFAULT_CHAT_FRAME:AddMessage("Searching following keywords:")
+	end
 	for _, keyword in pairs(keywordsArray) do
-		table.insert(keywords, keyword)			
-		--DEFAULT_CHAT_FRAME:AddMessage(keyword)			
+		table.insert(keywords, keyword)		
+		if debug then
+			DEFAULT_CHAT_FRAME:AddMessage(keyword)					
+		end
 	end
 end
 
@@ -82,7 +81,7 @@ local function PrintStatus()
 		else
 			killStatus = "|cFF00FF00alive"
 		end
-		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFFFF" .. v["keywords"][1] .. ": " .. killStatus)
+		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFFFF" .. firstToUpper(v["keywords"][1]) .. ": " .. killStatus)
 	end	
 end
 
@@ -117,7 +116,6 @@ local function GetRemainingUnits(targetUnits, updateKeywords)
 	end
 	return remainingUnitsCount
 end
--- Hiale
 
 --[[
 	Refreshes the LFGList after a given interval
@@ -151,35 +149,19 @@ end)
 f:SetScript("OnEvent", function(self, event, ...)
 	local unit = ...
 	if event == "ADDON_LOADED" and unit == "HellbaneHelper" then
-		if INTERVAL == nil then INTERVAL = 30 end
-		if friends == nil then friends = {} end
-		if keywords == nil then keywords = {} end
+		if INTERVAL == nil then INTERVAL = 2 end
 		if ENABLED == nil then ENABLED = true end
 		if playerName == nil then playerName = UnitName("player") end
 		if SOUND_NOTIFICATION == nil then SOUND_NOTIFICATION = true end
-		if AUTO_SIGN == nil then AUTO_SIGN = true end
 		if WHISPER_NOTIFICATION == nil then WHISPER_NOTIFICATION = true end
-		if SEARCH_LOGIN == nil then SEARCH_LOGIN = true end
-		if GUILD_NOTIFICATION == nil then GUILD_NOTIFICATION = true end
 		if LATEST_CATEGORY == nil then LATEST_CATEGORY = "" end
-		-- Hiale
-		INTERVAL = 2
-		GUILD_NOTIFICATION = false
-		SEARCH_LOGIN = false
-		-- Hiale
+		if L.UNITS ~= nil then
+			units = mergeTables(L.UNITS, units)
+		end
 	elseif event == "PLAYER_LOGIN" then
 		DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00" .. L.WARNING_LOGIN_TEXT)
-		if not IsInGuild() and GUILD_NOTIFICATION then
-			GUILD_NOTIFICATION = false
-		end
-		if SEARCH_LOGIN and ENABLED and LATEST_CATEGORY ~= "" and LATEST_CATEGORY ~= nil then
-			DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00" .. L.WARNING_SEARCH_LOGIN_TEXT)
-			C_LFGList.Search(LATEST_CATEGORY, "")
-		end
-		-- Hiale
 		AUTO_SIGN = false
 		GetRemainingUnits(units, true)
-		-- Hiale
 	elseif event == "LFG_LIST_SEARCH_RESULT_UPDATED" and ENABLED then
 		local id, activityID, name, comment, voiceChat, iLvl, age, numBNetFriends, numCharFriends, numGuildMates, isDelisted = C_LFGList.GetSearchResultInfo(unit)
 		if name ~= nil then
@@ -188,7 +170,8 @@ f:SetScript("OnEvent", function(self, event, ...)
 		if isDelisted and contains(foundGroups, name) ~= false then
 			foundGroups[contains(foundGroups, name)] = nil
 		end	
-	elseif event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" and ENABLED then -- Received reults of a search in LFGList
+	elseif event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" and ENABLED and correctZone then -- Received reults of a search in LFGList
+		--DEFAULT_CHAT_FRAME:AddMessage("EVENT")
 		local numResults, results = C_LFGList.GetSearchResults()
 		for k, v in pairs(results) do
 			local id, activityID, name, comment, voiceChat, iLvl, age, numBNetFriends, numCharFriends, numGuildMates, isDelisted = C_LFGList.GetSearchResultInfo(results[k])
@@ -199,28 +182,21 @@ f:SetScript("OnEvent", function(self, event, ...)
 				if isMatch(name, keywords) then
 					foundGroups[findIndex(foundGroups)] = name
 					if AUTO_SIGN and isEligibleToSign() then
-						DEFAULT_CHAT_FRAME:AddMessage("Trying to join...")
+						DEFAULT_CHAT_FRAME:AddMessage(L.AUTO_SIGN_TEXT)
 						C_LFGList.ApplyToGroup(id, "", false, false, true) -- SIGN UP AS DPS
 					end
 					if SOUND_NOTIFICATION then
 						PlaySound("ReadyCheck", "master")
 					end
-					if GUILD_NOTIFICATION and IsInGuild() then
-						SendChatMessage(L.NOTIFICATION_GUILD .. name, "GUILD", nil, nil)
-					end
 					if WHISPER_NOTIFICATION then
 						DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000" .. L.NOTIFICATION_YOU .. name)
-						for a, b in pairs(friends) do
-							pmFriend(friends[a], name)
-						end
 					end
 				end
 			end
 		end
 	end	
-	-- Hiale
 	if event == "ZONE_CHANGED_NEW_AREA" or event == "PLAYER_LOGIN" then
-		if GetZoneText() == "Tanaan Jungle" then --ToDo: localize!
+		if GetZoneText() == L.TANAAN_JUNGLE_ZONE then
 			correctZone = true
 		else
 			correctZone = false
@@ -243,5 +219,4 @@ f:SetScript("OnEvent", function(self, event, ...)
 			end
 		end
 	end
-	-- Hiale
 end)
