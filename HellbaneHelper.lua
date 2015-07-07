@@ -34,7 +34,7 @@ local units = {
 	[39290] = { keywords = {"vengeance", "veng"}, subzones = {} }
 }
 
-local debug = true
+local debug = false
 local keywords = {}
 local AUTO_SIGN = false
 local correctZone = false
