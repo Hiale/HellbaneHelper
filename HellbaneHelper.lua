@@ -14,6 +14,7 @@ local f = CreateFrame("Frame") -- Addon Frame
 local ticks = 0 -- Time elapsed since last search
 local C_LFGList = C_LFGList -- The C_LFGList
 local foundGroups = {} -- Groups that the player has been notified about
+-- All Blizzard Premade Group categories
 local categories = {
 	"Questing", 
 	"Dungeons", 
@@ -35,11 +36,23 @@ local units = {
 }
 
 local debug = false
+local lastEventTime
 local keywords = {}
 local AUTO_SIGN = false
 local correctZone = false
 local oldRemainingUnitsCount = 0
-local oldTargetUnitsCount = 0
+
+local function PrintStatus()
+	for k, v in pairs(units) do	
+		local killStatus
+		if IsQuestFlaggedCompleted(k) then
+			killStatus = "|cFFFF0000dead"
+		else
+			killStatus = "|cFF00FF00alive"
+		end
+		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFFFF" .. firstToUpper(v["keywords"][1]) .. ": " .. killStatus)
+	end	
+end
 
 --[[
 	Reads all commands with the prefix SLASH-HELLBANEHELPER and responds accordingly
@@ -47,7 +60,22 @@ local oldTargetUnitsCount = 0
 	@param(editbox)
 ]]
 local function handler(msg, editbox)
-	InterfaceOptionsFrame_OpenToCategory(options)
+	msg = string.lower(msg)
+	if msg == "enable" then
+		ENABLED = true
+		DEFAULT_CHAT_FRAME:AddMessage("|cFF00FF00" .. L.WARNING_ENABLED_TEXT)
+	elseif msg == "disable" then
+		ENABLED = false
+		DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000" .. L.WARNING_DISABLED_TEXT)
+	elseif msg == "status" then
+		PrintStatus()
+	elseif msg == "debug" then
+		debug = not debug
+		DEFAULT_CHAT_FRAME:AddMessage("Debug Mode: " .. tostring(debug))
+	elseif msg == "eventtime" then
+		if lastEventTime == nil then lastEventTime = "(unknown)" end
+		DEFAULT_CHAT_FRAME:AddMessage("Last Event Time: " .. lastEventTime)
+	end
 end
 SlashCmdList["HELLBANEHELPER"] = handler
 f:RegisterEvent("LFG_LIST_SEARCH_RESULTS_RECEIVED")
@@ -71,18 +99,6 @@ local function UpdateKeywords(keywordsArray)
 			DEFAULT_CHAT_FRAME:AddMessage(keyword)					
 		end
 	end
-end
-
-local function PrintStatus()
-	for k, v in pairs(units) do	
-		local killStatus
-		if IsQuestFlaggedCompleted(k) then
-			killStatus = "|cFFFF0000dead"
-		else
-			killStatus = "|cFF00FF00alive"
-		end
-		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFFFF" .. firstToUpper(v["keywords"][1]) .. ": " .. killStatus)
-	end	
 end
 
 local function GetRemainingUnits(targetUnits, updateKeywords)
@@ -150,11 +166,18 @@ f:SetScript("OnEvent", function(self, event, ...)
 	local unit = ...
 	if event == "ADDON_LOADED" and unit == "HellbaneHelper" then
 		if INTERVAL == nil then INTERVAL = 2 end
+		if MAXAGE == nil then MAXAGE = 60 end
 		if ENABLED == nil then ENABLED = true end
 		if playerName == nil then playerName = UnitName("player") end
 		if SOUND_NOTIFICATION == nil then SOUND_NOTIFICATION = true end
 		if WHISPER_NOTIFICATION == nil then WHISPER_NOTIFICATION = true end
 		if LATEST_CATEGORY == nil then LATEST_CATEGORY = "" end
+		if ROLES == nil then
+			ROLES = {}
+			ROLES.TANK = false
+			ROLES.HEALER = false
+			ROLES.DPS = true
+		end
 		if L.UNITS ~= nil then
 			units = mergeTables(L.UNITS, units)
 		end
@@ -171,7 +194,9 @@ f:SetScript("OnEvent", function(self, event, ...)
 			foundGroups[contains(foundGroups, name)] = nil
 		end	
 	elseif event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" and ENABLED and correctZone then -- Received reults of a search in LFGList
-		--DEFAULT_CHAT_FRAME:AddMessage("EVENT")
+		if debug then
+			lastEventTime = date("%y-%m-%d %H:%M:%S")
+		end
 		local numResults, results = C_LFGList.GetSearchResults()
 		for k, v in pairs(results) do
 			local id, activityID, name, comment, voiceChat, iLvl, age, numBNetFriends, numCharFriends, numGuildMates, isDelisted = C_LFGList.GetSearchResultInfo(results[k])
@@ -179,11 +204,14 @@ f:SetScript("OnEvent", function(self, event, ...)
 				name = string.lower(name) -- CASE INSENSITIVE
 			end
 			if not isDelisted and not contains(foundGroups, name) then
-				if isMatch(name, keywords) then
+				if isMatch(name, keywords) and age < MAXAGE then
 					foundGroups[findIndex(foundGroups)] = name
+					if debug then
+						DEFAULT_CHAT_FRAME:AddMessage("Age: " .. tostring(age))						
+					end
 					if AUTO_SIGN and isEligibleToSign() then
 						DEFAULT_CHAT_FRAME:AddMessage(L.AUTO_SIGN_TEXT)
-						C_LFGList.ApplyToGroup(id, "", false, false, true) -- SIGN UP AS DPS
+						C_LFGList.ApplyToGroup(id, "", ROLES.TANK, ROLES.HEALER, ROLES.DPS)
 					end
 					if SOUND_NOTIFICATION then
 						PlaySound("ReadyCheck", "master")

@@ -70,6 +70,9 @@ function isEligibleToSign()
 		return true
 	end
 end
+--[[
+	Splits the given keyword on each whitespace and stores it in a table
+]]
 function split(keyword)
 	local words = {}
 	local count = 0

@@ -3,6 +3,10 @@ HellbaneHelperLocals = {}
 local L = HellbaneHelperLocals
 local addon = ...
 
+SLASH_HELLBANEHELPER1 = "/hh"
+SLASH_HELLBANEHELPER2 = "/hellbane"
+SLASH_HELLBANEHELPER2 = "/hellbanehelper"
+
 L.UNITS = {
 	[39287] = { keywords = {"garramuerte"}, subzones = {"Aktar's Post", "Ruins of Kra'nak"} },
 	[39288] = { keywords = {"horropuño"}, subzones = {"Rangari Refuge"} },
